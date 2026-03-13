@@ -1,0 +1,22 @@
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Data and Models
+data/*
+!data/README.md
+!data/get_data.py
+*.csv
+*.pt
+*.pth
+*.h5
+
+# Logs and Notebook checkpoints
+experiments/logs/*
+.ipynb_checkpoints/
