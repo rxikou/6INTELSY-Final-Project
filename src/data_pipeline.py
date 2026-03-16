@@ -6,7 +6,7 @@ import os
 DATA_DIR = "data/"
 RAW_FILES = {
     "train": "train.tsv",
-    "val": "valid.tsv",
+    "val": "val.tsv",
     "test": "test.tsv"
 }
 

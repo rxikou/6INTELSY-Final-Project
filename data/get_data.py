@@ -1,10 +1,9 @@
 import os
 import urllib.request
 import zipfile
-import pandas as pd
 
 def download_and_save_data():
-    print("Downloading the official LIAR dataset directly from UCSB...")
+    print("Downloading the official raw LIAR dataset directly from UCSB...")
     
     # Define paths
     output_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,39 +14,25 @@ def download_and_save_data():
     
     # Download the zip file
     urllib.request.urlretrieve(url, zip_path)
-    print("Download complete. Extracting and formatting files...")
+    print("Download complete. Extracting raw TSV files...")
     
+    # Extract the files
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(output_dir)
+            
+    # Rename 'valid.tsv' to 'val.tsv' to maintain pipeline consistency
+    valid_tsv = os.path.join(output_dir, "valid.tsv")
+    val_tsv = os.path.join(output_dir, "val.tsv")
+    if os.path.exists(valid_tsv):
+        os.rename(valid_tsv, val_tsv)
         
-    # The raw LIAR dataset doesn't have column headers, so we map them manually
-    columns = [
-        "id", "label", "statement", "subject", "speaker", "job_title", 
-        "state", "party", "barely_true_counts", "false_counts", 
-        "half_true_counts", "mostly_true_counts", "pants_on_fire_counts", "context"
-    ]
-    
-    # Convert the extracted TSV files to clean CSVs
-    splits = ['train', 'valid', 'test']
-    for split in splits:
-        tsv_file = os.path.join(output_dir, f"{split}.tsv")
-        # Rename 'valid' to 'val' to match our pipeline
-        csv_name = 'val.csv' if split == 'valid' else f"{split}.csv"
-        csv_file = os.path.join(output_dir, csv_name)
-        
-        # Read the raw TSV and save as a clean CSV
-        df = pd.read_csv(tsv_file, sep='\t', names=columns, header=None)
-        df.to_csv(csv_file, index=False)
-        
-        # Clean up the raw TSV
-        os.remove(tsv_file)
-        
-    # Clean up the zip file and readme
+    # Clean up the zip file and remove the README
     os.remove(zip_path)
-    if os.path.exists(os.path.join(output_dir, "README")):
-        os.remove(os.path.join(output_dir, "README"))
+    readme_path = os.path.join(output_dir, "README")
+    if os.path.exists(readme_path):
+        os.remove(readme_path)
         
-    print(f"Data successfully cleaned and saved to {output_dir}")
+    print(f"Raw TSV data successfully extracted and cleaned up in {output_dir}")
 
 if __name__ == "__main__":
     download_and_save_data()
