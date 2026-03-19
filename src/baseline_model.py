@@ -27,5 +27,12 @@ model.fit(X_train_vec, y_train)
 # Predict
 predictions = model.predict(X_test_vec)
 
+# Error analysis
+for i in range(10):
+    if predictions[i] != y_test.iloc[i]:
+        print("\nTEXT:", X_test.iloc[i])
+        print("TRUE:", y_test.iloc[i])
+        print("PREDICTED:", predictions[i])
+
 # Evaluate
 print(classification_report(y_test, predictions))
