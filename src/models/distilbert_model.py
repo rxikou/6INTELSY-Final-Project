@@ -6,22 +6,36 @@ class DistilBERTClassifier(nn.Module):
     def __init__(self, num_classes):
         super(DistilBERTClassifier, self).__init__()
 
-        # Load pretrained DistilBERT
         self.bert = DistilBertModel.from_pretrained("distilbert-base-uncased")
 
-        # Classification layer
-        self.classifier = nn.Linear(768, num_classes)
+        self.dropout = nn.Dropout(0.3)
 
-    def forward(self, input_ids, attention_mask):
+        self.classifier = nn.Sequential(
+            nn.Linear(768, 256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, num_classes)
+        )
+
+        # ADD THIS (for loss computation)
+        self.criterion = nn.CrossEntropyLoss()
+
+    def forward(self, input_ids, attention_mask, labels=None):
 
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask
         )
 
-        # CLS token representation
         cls_output = outputs.last_hidden_state[:, 0]
 
-        logits = self.classifier(cls_output)
+        x = self.dropout(cls_output)
+        logits = self.classifier(x)
 
-        return logits
+        # MAKE IT COMPATIBLE WITH HF STYLE
+        loss = None
+        if labels is not None:
+            loss = self.criterion(logits, labels)
+
+        return {"loss": loss, "logits": logits}
+

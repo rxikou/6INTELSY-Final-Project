@@ -50,12 +50,23 @@ model = DistilBertForSequenceClassification.from_pretrained(
     num_labels=2
 )
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)  # slightly lower LR
+# OPTIMIZER (UPDATED)
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=2e-5,
+    weight_decay=0.01  # regularization
+)
+
+# EARLY STOPPING SETUP
+best_val_acc = 0
+best_epoch = 0
+patience = 2
+counter = 0
 
 # TRAINING WITH VALIDATION
 print("\nTraining DistilBERT with validation...\n")
 
-epochs = 2  # safe upgrade
+epochs = 5
 
 for epoch in range(epochs):
 
@@ -70,6 +81,10 @@ for epoch in range(epochs):
         loss = outputs.loss
 
         loss.backward()
+
+        # GRADIENT CLIPPING (NEW)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
         optimizer.step()
 
         total_loss += loss.item()
@@ -92,6 +107,24 @@ for epoch in range(epochs):
     val_acc = correct / total
 
     print(f"Epoch {epoch+1}, Loss: {avg_loss:.4f}, Val Acc: {val_acc:.4f}")
+
+    # EARLY STOPPING
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        best_epoch = epoch + 1
+        counter = 0
+        torch.save(model.state_dict(), "best_bert.pt")
+    else:
+        counter += 1
+
+    if counter >= patience:
+        print("Early stopping triggered")
+        break
+
+# LOAD BEST MODEL
+model.load_state_dict(torch.load("best_bert.pt"))
+
+print(f"\nBest Epoch: {best_epoch}, Best Val Acc: {best_val_acc:.4f}")
 
 # FINAL TEST EVALUATION
 print("\nEvaluating DistilBERT...\n")
