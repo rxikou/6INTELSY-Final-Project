@@ -1,0 +1,16 @@
+Classification Report - DistilBERT
+============================================================
+
+              precision    recall  f1-score   support
+
+        FAKE       0.52      0.54      0.53       464
+        REAL       0.70      0.68      0.69       727
+
+    accuracy                           0.63      1191
+   macro avg       0.61      0.61      0.61      1191
+weighted avg       0.63      0.63      0.63      1191
+
+
+============================================================
+Total Errors: 442 / 1191
+Error Rate: 37.11%

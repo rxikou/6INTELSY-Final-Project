@@ -1,0 +1,11 @@
+{
+  "model": "DistilBERT",
+  "default_threshold": 0.5,
+  "optimized_threshold": 0.5,
+  "default_f1": 0.6123551720408855,
+  "optimized_f1": 0.6123551720408855,
+  "improvement": 0.0,
+  "improvement_percent": 0.0,
+  "episodes": 200,
+  "validation_samples": 1168
+}
