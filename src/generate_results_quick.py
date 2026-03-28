@@ -117,8 +117,8 @@ for bars in [bars1, bars2, bars3]:
                 fontsize=10, fontweight='bold')
 
 plt.tight_layout()
-plt.savefig("experiments/results/detailed_metrics_plot.png", dpi=300, bbox_inches='tight')
-print("✓ Saved: experiments/results/detailed_metrics_plot.png")
+plt.savefig("experiments/results/model_comparison2.png", dpi=300, bbox_inches='tight')
+print("✓ Saved: experiments/results/model_comparison2.png")
 plt.close()
 
 # ── Create detailed metrics breakdown ───────────────────────────────
