@@ -5,6 +5,7 @@ from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
 import pandas as pd
 from collections import Counter
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 
@@ -200,8 +201,9 @@ for epoch in range(epochs):
         val_masks = create_mask(X_val).to(device)
         val_preds = model(X_val, mask=val_masks).argmax(dim=1)
         val_acc = (val_preds == y_val).float().mean().item()
+        val_f1 = f1_score(y_val.cpu().numpy(), val_preds.cpu().numpy(), average='macro', zero_division=0)
 
-    print(f"Epoch {epoch+1:2d}/{epochs}, Loss: {avg_loss:.4f}, Val Acc: {val_acc:.4f}", flush=True)
+    print(f"Epoch {epoch+1:2d}/{epochs}, Loss: {avg_loss:.4f}, Val Acc: {val_acc:.4f}, Val F1: {val_f1:.4f}", flush=True)
 
     # EARLY STOPPING
     if val_acc > best_val_acc:
@@ -227,5 +229,7 @@ with torch.no_grad():
     test_masks = create_mask(X_test).to(device)
     preds = model(X_test, mask=test_masks).argmax(dim=1)
     accuracy = (preds == y_test).float().mean().item()
+    macro_f1 = f1_score(y_test.cpu().numpy(), preds.cpu().numpy(), average='macro', zero_division=0)
 
 print(f"Pure CNN Test Accuracy: {accuracy:.4f}")
+print(f"Pure CNN Test Macro-F1: {macro_f1:.4f}")
