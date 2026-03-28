@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
+import pickle
 
 from models.cnn_model import CNNTextClassifier
 
@@ -48,6 +49,11 @@ def encode(text, vocab, max_len=100):
 print("Building vocabulary...")
 vocab = build_vocab(train_df["statement"])
 vocab_size = len(vocab)
+
+with open("vocab.pkl", "wb") as f:
+    pickle.dump(vocab, f)
+
+print(f"Vocabulary saved! Size: {vocab_size}")
 
 # CREATE EMBEDDINGS
 print("Creating embeddings...")

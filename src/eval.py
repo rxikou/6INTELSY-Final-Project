@@ -13,6 +13,8 @@ from sklearn.metrics import (
     confusion_matrix, classification_report, accuracy_score, 
     precision_score, recall_score, f1_score, roc_auc_score, roc_curve, auc
 )
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 from collections import Counter
 import pickle
 
@@ -92,7 +94,13 @@ def load_bert_model(checkpoint_path="best_bert.pt"):
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
     
     model = DistilBERTClassifier(num_classes=2, dropout_rate=0.2, label_smoothing=0.15)
-    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    state_dict = torch.load(checkpoint_path, map_location=device)
+
+    # Remove unexpected keys safely
+    if "criterion.weight" in state_dict:
+        del state_dict["criterion.weight"]
+
+    model.load_state_dict(state_dict, strict=False)
     model.to(device)
     model.eval()
     
@@ -151,7 +159,14 @@ def predict_bert(model, texts, tokenizer):
     
     with torch.no_grad():
         for batch_input_ids, batch_attention_mask in loader:
-            logits = model(batch_input_ids, attention_mask=batch_attention_mask)
+            outputs = model(batch_input_ids, attention_mask=batch_attention_mask)
+
+            # Handle dict output safely
+            if isinstance(outputs, dict):
+                logits = outputs["logits"]
+            else:
+                logits = outputs
+                
             probs = torch.softmax(logits, dim=1)
             preds = logits.argmax(dim=1)
             
@@ -159,6 +174,20 @@ def predict_bert(model, texts, tokenizer):
             all_probs.extend(probs.cpu().numpy())
     
     return np.array(all_preds), np.array(all_probs)
+
+def predict_baseline(X_train, y_train, X_test):
+    vectorizer = TfidfVectorizer(max_features=5000)
+
+    X_train_vec = vectorizer.fit_transform(X_train)
+    X_test_vec = vectorizer.transform(X_test)
+
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train_vec, y_train)
+
+    preds = model.predict(X_test_vec)
+    probs = model.predict_proba(X_test_vec)
+
+    return preds, probs
 
 
 def evaluate_model(y_true, y_pred, y_probs, model_name="Model"):
@@ -255,6 +284,34 @@ def main():
     
     print(f"Test set size: {len(test_df)}")
     print(f"Class distribution: {dict(zip(CLASS_NAMES, np.bincount(y_test)))}\n")
+
+    # Baseline Evaluation
+    print("\n" + "-"*60)
+    print("Evaluating Baseline Model (Logistic Regression)")
+    print("-"*60)
+    try:
+        train_df = pd.read_csv(data_dir / "cleaned_train.csv")
+        X_train = train_df["statement"]
+        y_train = train_df["label"].values
+
+        baseline_preds, baseline_probs = predict_baseline(X_train, y_train, X_test)
+
+        baseline_metrics, baseline_report = evaluate_model(
+            y_test, baseline_preds, baseline_probs, "Baseline (LogReg)"
+        )
+
+        print(f"Accuracy: {baseline_metrics['Accuracy']:.4f}")
+        print(f"Macro-F1: {baseline_metrics['Macro-F1']:.4f}")
+
+        save_confusion_matrix(y_test, baseline_preds, "Baseline_LogReg")
+        save_error_analysis(y_test, baseline_preds, X_test, "Baseline_LogReg")
+        generate_roc_curve(y_test, baseline_probs, "Baseline_LogReg")
+
+        print("[OK] Baseline evaluation complete")
+
+    except Exception as e:
+        print(f"[ERROR] Error evaluating baseline: {e}")
+        baseline_metrics = None
     
     # Evaluate CNN
     print("\n" + "-"*60)
@@ -299,10 +356,20 @@ def main():
         bert_metrics = None
     
     # Save detailed metrics
-    if cnn_metrics and bert_metrics:
-        metrics_df = pd.DataFrame([cnn_metrics, bert_metrics])
+    metrics_list = []
+
+    if baseline_metrics:
+        metrics_list.append(baseline_metrics)
+    if cnn_metrics:
+        metrics_list.append(cnn_metrics)
+    if bert_metrics:
+        metrics_list.append(bert_metrics)
+
+    if metrics_list:
+        metrics_df = pd.DataFrame(metrics_list)
         save_path = RESULTS_DIR / "eval_metrics_comparison.csv"
         metrics_df.to_csv(save_path, index=False)
+
         print(f"\n[OK] Saved: {save_path}")
         print("\nMetrics Comparison:")
         print(metrics_df.to_string(index=False))
