@@ -33,11 +33,6 @@ if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "install") {
     & $PIP install -q -r requirements.txt
 }
 
-if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "baseline") {
-    Write-Host "[2/8] Running baseline model..." -ForegroundColor Cyan
-    & $PYTHON src\baseline_model.py
-}
-
 if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "train-cnn") {
     Write-Host "[3/8] Training CNN model..." -ForegroundColor Cyan
     & $PYTHON src\train.py
@@ -50,7 +45,7 @@ if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "train-bert") {
 
 if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "rl-agent") {
     Write-Host "[5/8] Training RL agent..." -ForegroundColor Cyan
-    & $PYTHON src\rl_agent.py
+    & $PYTHON src\rl_integration.py
 }
 
 if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "eval") {
@@ -66,7 +61,7 @@ if ($Target -eq "all" -or $Target -eq "repro" -or $Target -eq "results") {
 if ($Target -eq "clean") {
     Write-Host "Cleaning artifacts..." -ForegroundColor Yellow
     Remove-Item "experiments\logs" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "*.pt" -Force -ErrorAction SilentlyContinue
+    Remove-Item "experiments\results\*" -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "✓ Clean complete`n" -ForegroundColor Green
 }
 
